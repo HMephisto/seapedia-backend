@@ -12,7 +12,6 @@ class StoreController extends Controller
     {
         $user = $request->user();
 
-        // Prevent creating a second store
         if (Store::where('seller_id', $user->id)->exists()) {
             return response()->json([
                 'message' => 'You already have a store.',
@@ -20,27 +19,27 @@ class StoreController extends Controller
         }
 
         $validated = $request->validate([
-            'store_name'     => 'required|string|max:100|unique:stores,store_name',
-            'description'    => 'nullable|string',
+            'store_name' => 'required|string|max:100|unique:stores,store_name',
+            'description' => 'nullable|string',
             'address_detail' => 'nullable|string',
         ]);
 
         $store = Store::create([
-            'seller_id'      => $user->id,
-            'store_name'     => $validated['store_name'],
-            'description'    => $validated['description'] ?? null,
+            'seller_id' => $user->id,
+            'store_name' => $validated['store_name'],
+            'description' => $validated['description'] ?? null,
             'address_detail' => $validated['address_detail'] ?? null,
         ]);
 
         return response()->json([
             'message' => 'Store created successfully.',
-            'store'   => $store,
+            'store' => $store,
         ], 201);
     }
 
     public function update(Request $request)
     {
-        $user  = $request->user();
+        $user = $request->user();
         $store = Store::where('seller_id', $user->id)->first();
 
         if (!$store) {
@@ -57,7 +56,7 @@ class StoreController extends Controller
                 'max:100',
                 Rule::unique('stores', 'store_name')->ignore($store->id),
             ],
-            'description'    => 'nullable|string',
+            'description' => 'nullable|string',
             'address_detail' => 'nullable|string',
         ]);
 
@@ -65,23 +64,48 @@ class StoreController extends Controller
 
         return response()->json([
             'message' => 'Store updated successfully.',
-            'store'   => $store->fresh(),
+            'store' => $store->fresh(),
         ]);
     }
 
     public function show($id)
-{
-    $store = Store::where('id', $id)
-                  ->with(['products' => function ($q) {
-                      $q->where('stock', '>', 0)
+    {
+        $store = Store::where('id', $id)
+            ->with([
+                'products' => function ($q) {
+                    $q->where('stock', '>', 0)
                         ->orderBy('created_at', 'desc');
-                  }])
-                  ->first();
+                }
+            ])
+            ->first();
 
-    if (!$store) {
-        return response()->json(['message' => 'Store not found.'], 404);
+        if (!$store) {
+            return response()->json(['message' => 'Store not found.'], 404);
+        }
+
+        return response()->json(['store' => $store]);
     }
 
-    return response()->json(['store' => $store]);
-}
+    public function hasStore(Request $request)
+    {
+        return response()->json([
+            'has_store' => Store::where('seller_id', $request->user()->id)->exists(),
+        ]);
+
+    }
+
+    public function myStore(Request $request)
+    {
+        $store = Store::where('seller_id', $request->user()->id)->first();
+
+        if (!$store) {
+            return response()->json([
+                'message' => 'You do not have a store yet.'
+            ], 404);
+        }
+
+        return response()->json([
+            'store' => $store
+        ]);
+    }
 }

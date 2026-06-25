@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\WalletController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,7 +29,7 @@ Route::get('/reviews', [ReviewController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
-Route::get('/stores/{id}',   [StoreController::class, 'show']); 
+Route::get('/stores/{id}', [StoreController::class, 'show']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -41,12 +43,30 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:SELLER')->group(function () {
         Route::post('/seller/store', [StoreController::class, 'create']);
         Route::put('/seller/store', [StoreController::class, 'update']);
-        Route::get('/seller/store',  [StoreController::class, 'show']); 
-        
+        Route::get('/seller/store', [StoreController::class, 'myStore']);
+        Route::get('/seller/store/check', [StoreController::class, 'hasStore']);
+
         Route::post('/seller/products', [ProductController::class, 'store']);
+        Route::post('/seller/products/{id}/image', [ProductController::class, 'uploadImage']);
         Route::put('/seller/products/{id}', [ProductController::class, 'update']);
         Route::delete('/seller/products/{id}', [ProductController::class, 'destroy']);
     });
-}); 
+
+    Route::middleware('role:BUYER')->group(function () {
+        Route::get('/addresses', [AddressController::class, 'index']);
+        Route::post('/addresses', [AddressController::class, 'store']);
+        Route::put('/addresses/{id}', [AddressController::class, 'update']);
+        Route::delete('/addresses/{id}', [AddressController::class, 'destroy']);
+        Route::post('/addresses/{id}/set-default', [AddressController::class, 'setDefault']);
+
+        Route::prefix('wallet')->group(function () {
+            Route::get('/', [WalletController::class, 'show']);
+            Route::post('/topup', [WalletController::class, 'topup']);
+            Route::get('/transactions', [WalletController::class, 'transactions']);
+        });
+    });
+
+
+});
 
 

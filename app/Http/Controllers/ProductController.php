@@ -5,26 +5,23 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    // Product list with optional search and filter
     public function index(Request $request)
     {
         $query = Product::with('store:id,store_name,address_detail')
-            ->where('stock', '>', 0); // only show in stock products
+            ->where('stock', '>', 0); 
 
-        // Search by name
         if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'ILIKE', '%' . $request->search . '%');
         }
 
-        // Filter by store
         if ($request->has('store_id')) {
             $query->where('store_id', $request->store_id);
         }
 
-        // Sort by price
         if ($request->has('sort_price')) {
             $query->orderBy('price', $request->sort_price === 'asc' ? 'asc' : 'desc');
         } else {
@@ -36,7 +33,6 @@ class ProductController extends Controller
         return response()->json($products);
     }
 
-    // Product detail
     public function show($id)
     {
         $product = Product::with([
@@ -128,8 +124,50 @@ class ProductController extends Controller
             return response()->json(['message' => 'You do not own this product.'], 403);
         }
 
+        if ($product->image_url) {
+            Storage::disk('public')->delete($product->image_url);
+        }
+
         $product->delete();
 
         return response()->json(['message' => 'Product deleted successfully.']);
+    }
+
+    public function uploadImage(Request $request, $id)
+    {
+        $store = $this->getSellerStore($request);
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Product not found.'], 404);
+        }
+
+        if (!$store || $product->store_id !== $store->id) {
+            return response()->json(['message' => 'You do not own this product.'], 403);
+        }
+
+        $validated = $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ]);
+
+        // If there is an existing stored image path, delete the old file
+        if ($product->image_url) {
+            Storage::disk('public')->delete($product->image_url);
+        }
+
+        $path = $request->file('image')->store('product-images', 'public');
+        $product->update([
+            'image_url' => $path,
+        ]);
+
+        return response()->json([
+            'message' => 'Product image uploaded successfully.',
+            'product' => $product->fresh(),
+        ]);
+    }
+
+    protected function getSellerStore(Request $request)
+    {
+        return Store::where('seller_id', $request->user()->id)->first();
     }
 }
