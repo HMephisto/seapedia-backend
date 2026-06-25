@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StoreController;
@@ -20,7 +21,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -31,7 +31,6 @@ Route::get('/products/{id}', [ProductController::class, 'show']);
 
 Route::get('/stores/{id}', [StoreController::class, 'show']);
 
-// Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -64,9 +63,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/topup', [WalletController::class, 'topup']);
             Route::get('/transactions', [WalletController::class, 'transactions']);
         });
+
+        Route::prefix('cart')->group(function () {
+            Route::get('/', [CartController::class, 'summary']);
+            Route::post('/items', [CartController::class, 'add']);
+            Route::patch('/items/{itemId}', [CartController::class, 'updateQuantity']);
+            Route::delete('/items/{itemId}', [CartController::class, 'remove']);
+            Route::delete('', [CartController::class, 'clear']);
+        });
     });
-
-
 });
 
 
