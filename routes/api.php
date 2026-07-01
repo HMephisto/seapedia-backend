@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\WalletController;
+use App\Http\Controllers\OrderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +50,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/seller/products/{id}/image', [ProductController::class, 'uploadImage']);
         Route::put('/seller/products/{id}', [ProductController::class, 'update']);
         Route::delete('/seller/products/{id}', [ProductController::class, 'destroy']);
+
+        Route::get('/seller/orders', [OrderController::class, 'sellerIndex']);
     });
 
     Route::middleware('role:BUYER')->group(function () {
@@ -71,6 +74,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/items/{itemId}', [CartController::class, 'remove']);
             Route::delete('', [CartController::class, 'clear']);
         });
+
+        Route::get('/checkout/summary', [OrderController::class, 'checkoutSummary']);
+        Route::post('/checkout', [OrderController::class, 'store']);
+        
+        Route::get('/orders', [OrderController::class, 'buyerIndex']);
+        Route::get('/orders/{id}', [OrderController::class, 'buyerShow']);
     });
 });
 
